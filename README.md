@@ -6,7 +6,7 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
 
 ※ 本リポジトリでは、共同研究の都合上、コードは公開していません。
 
-## Overview
+## 概要(Overview)
 
 本システムは、以下の考え方に基づいて設計されています。
 
@@ -14,33 +14,33 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
 - VLMはその結果に対して「所見の一文」を付与する役割に限定する
 - LLMは診断を直接生成するものではなく、参照すべき情報源を選択・統合する**オーケストレータ**として扱う
 
-## Current Status
+## 現状での開発状況
 
-### Implemented
+### 実装済み（Implemented）
 
-- CNNによる橋梁画像の損傷検出
+- CNNによる橋梁画像の損傷検出(現状ある画像で動作)
 - 推論結果のJSON構造化
 - VLM(Qwen-VL)による所見文の生成
 - CNN出力JSONに対する拡張JSONの生成
 
-### Under Design / Concept Phase
+### 設計・構想段階（Under Design / Concept Phase）
 
 - LLMをオーケストレータとした全体制御
 - MCPを用いたツール呼び出し制御
 - RAG / Knowledge Graph / 外部APIの統合
 
-## Pipeline Architecture
+## 本プロジェクトの処理パイプライン
 
 1. 入力画像をCNNにより解析
-2. 損傷候補wpお構造化JSONとして出力
+2. 損傷候補を構造化JSONとして出力
 3. VLMがJSONを入力として所見の一文を生成
 4. 拡張JSONをLLMに渡す
 5. LLMがMCP経由で必要な情報源を選択・参照
 6. 参照情報を統合して診断結果を生成
 
-## JSON-based Interface
+## JSONの想定フォーマット
 
-### CNN Output
+### CNNの出力JSON（想定例）
     {
         "image_name": ............jpg,
         "detections": [
@@ -57,7 +57,7 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
         ],
     }
 
-### VLM-Extended JSON(Example)
+### VLMによる拡張JSON（想定例）
     {
         "image_name": ............jpg,
         "detections": [
@@ -72,12 +72,13 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
                 }
             }
         ],
-        "vlm_caption": "classの詳細な損傷なcaption",
-        "vlm_comment" : "vlm_captionやCNN / ViTのJSONを参照してVLMが出力を行ったもの."
+        "vlm_caption": "classごとの損傷を専門家が説明したcaption",
+        "vlm_comment" : "vlm_captionやCNN / ViTのJSONを参照してVLMが出力を行ったもの"
     }
 
-## Demo(Current Implementation)
-### 1) CNN Output JSON(Example)
+## 実装デモ（現在の動作例）
+
+### 1) CNNが出力したjson
 ```json
 {
   "image_name": "1833086M00100000_01_00_Cr_00401_08_2005_5.jpg",
@@ -106,7 +107,7 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
   ]
 }
 ```
-### 2)VLM adds one-line 
+### 2)VLMが生成した文章を追加
 ```json
 {
   "image_name": "1833086M00100000_01_00_Cr_00401_08_2005_5.jpg",
@@ -137,14 +138,26 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
   "vlm_comment": "この画像には、道路橋の一部であることが確認できます。具体的には、国道6号線の部分です。損傷検出結果では、石灰石の存在が見られます。石灰石は、特に強固な材料として知られていますので、これが損傷している可能性があります。また、石灰石の位置も特定されています。\n\n主な損傷の種類としては、石灰石の破壊や剥離などが考えられます。これらの損傷は、路面の耐久性を低下させるとともに、車両の安全性にも影響を与えます。健全度βについては、この状況下での健康さを評価するために使用されます。例えば、この場合、石灰石の破壊により、路面の安定性が低下すると推測されるため、β値は低いと考えられるでしょう。\n\n以上のように、この損傷は重要な問題となり得ることがあります。そのため、定期的な点検と維持管理が必要となります。"
 }
 ```
+#### 注釈
 
-### 3)Notebook Execution Snapshot(VLM)
+jsonのパラメータの説明：
+
+```md
+- num_detections: 検出数
+- class_name: 検出オブジェクトのクラス
+- score: 信頼度
+- bbox: 損傷がある位置の座標情報
+- vlm_caption: classごとの損傷を専門家が説明したcaption
+- vlm_comment: vlm_captionやCNNのJSONを参照してVLMが出力を行った文章
+```
+
+### 3) Notebook実行例（VLMによる所見生成）
 
 下記はbatch処理を行わずnotebookで一枚の画像と一枚のjsonを使いnotebookでVLMが動くdemoのである
 ![alt text](images/VLM_output.jpeg)
 実際は、この処理を複数のjsonで行い、既存のCNNでの出力jsonにvlm_commentで統合したjsonの生成を行なっている。
 
-## LLM Orchestration(Concept)
+## LLMによる診断オーケストレーション
 
 LLMは拡張JSONを入力として、以下の情報源をMCP経由で必要に応じて呼び分けることを想定している
 
@@ -157,20 +170,20 @@ LLMは拡張JSONを入力として、以下の情報源をMCP経由で必要に�
 - External API
     - 内部に存在しない、もしくは最新の情報の補完
 
-## Design Motivation
+## 設計の背景と目的
 
 CNNによる画像認識結果は、橋梁点検において重要な客観的根拠になる。
 
-一方で、実際の診断は、数値や検出結果の解釈、過去事例との比較、法定基準との整合など、複数の観点を組み合わせて行われます。
+一方で、実際の診断は、数値や検出結果の解釈、過去事例との比較、法定基準との整合など、複数の観点を組み合わせて行われる。
 
 本プロジェクトでは、これらの判断プロセスを段階的に統合するためのAIエージェント構成を検討している。
 
-## Future Work
+## 今後の展望
 
-- LLM + MCPによるオーケストレーションの実装
-- RAG / Knowledge Graphの統合検証
-- AWS環境でのスケール検証
+- LLM + MCPによるオーケストレーションの実装(High priority)
+- RAG / Knowledge Graphの統合検証(Medium Priority)
+- AWS環境でのスケール検証(planned)
 - 出力結果に対する根拠。引用情報の明示
 
-## Nano Banana Proで生成したイメージ図
+## システム全体イメージ図（Nano Banana Pro生成）
 ![alt text](images/output_image.png)
