@@ -1,0 +1,14 @@
+flowchart TD
+    A[Image] --> B[CNN]
+    B -->|Detection / Segmentation JSON| C[VLM]
+    C --> D[LLM Orchestrator]
+
+    D --> E[MCP]
+
+    E --> F["RAG(過去事例・文書)"]
+    E --> G["RDF / Knowledge Graph(基準・関係)"]
+    E --> H["External API"]
+
+    F --> I[Diagnosis Output]
+    G --> I
+    H --> I

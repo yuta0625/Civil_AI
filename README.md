@@ -38,6 +38,9 @@ CNNによる画像認識結果を客観的な根拠として用い、VLM・RAG�
 5. LLMがMCP経由で必要な情報源を選択・参照
 6. 参照情報を統合して診断結果を生成
 
+## 処理パイプラインの詳細
+![Processing Pipeline](docs/pipeline.svg)
+
 ## JSONの想定フォーマット
 
 ### CNNの出力JSON（想定例）
